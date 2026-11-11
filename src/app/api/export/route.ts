@@ -1,0 +1,2 @@
+import { currentArtist } from '@/lib/session';
+export async function GET(){const artist=await currentArtist();if(!artist)return new Response('Unauthorized',{status:401});return new Response(JSON.stringify({profile:artist,projects:[],writing:[],ideas:[]},null,2),{headers:{'Content-Type':'application/json','Content-Disposition':'attachment; filename="sirius-profile.json"','Cache-Control':'no-store'}});}

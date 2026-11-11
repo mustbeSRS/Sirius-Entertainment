@@ -1,0 +1,27 @@
+import { createHash } from 'node:crypto';
+import { test,expect } from '@playwright/test';
+import { mkdir,readFile,writeFile } from 'node:fs/promises';
+test('registration, returning recognition, consent, isolation, responsive UI and revocation',async({page,context,browser})=>{
+ const email=`test-${Date.now()}@example.com`;
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'Make room for your words.'})).toBeVisible();
+ const marketing=page.locator('input[name=marketing]');await expect(marketing).not.toBeChecked();
+ await page.getByLabel('Full name').fill('Test Artist');await page.getByLabel('Email address').fill(email);await page.getByLabel('Mobile number').fill('+96892123456');await page.locator('input[name=terms]').check();
+ await page.getByRole('button',{name:'Start Creating'}).click();await expect(page).toHaveURL(/studio/);
+ await expect(page.getByRole('heading',{name:'Welcome back, Test.'})).toBeVisible();
+ const cookies=await context.cookies();const session=cookies.find(c=>c.name==='sirius_session');expect(session?.httpOnly).toBe(true);expect(session?.sameSite).toBe('Lax');expect(session?.expires).toBeGreaterThan(Date.now()/1000);
+ await page.reload();await expect(page.getByRole('heading',{name:'Welcome back, Test.'})).toBeVisible();
+ const state=JSON.parse(await readFile('.data/e2e/studio.json','utf8'));expect(state.sessions.some((s:{token_hash:string})=>s.token_hash===session?.value)).toBe(false);
+ await mkdir('work/screenshots',{recursive:true});await page.screenshot({path:'work/screenshots/dashboard.png',fullPage:true});
+ await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.getByText('Not subscribed',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Opt in to community updates'}).click();await expect(page.getByText('Opted in',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Withdraw marketing consent'}).click();await expect(page.getByText('Not subscribed',{exact:true})).toBeVisible();
+ const response=await context.request.get('/api/export');expect(response.status()).toBe(200);const data=await response.json();expect(data.profile.email).toBe(email);expect(data.profile.marketing_consent).toBe(false);
+ const cross=await context.request.post('/api/consent',{headers:{origin:'https://evil.example'},data:{marketing:true}});expect(cross.status()).toBe(403);
+ const stranger=await browser.newContext();expect((await stranger.request.get('http://localhost:3000/api/export')).status()).toBe(401);
+ await stranger.addCookies([{name:'sirius_session',value:'forged-token',domain:'localhost',path:'/'}]);expect((await stranger.request.get('http://localhost:3000/api/export')).status()).toBe(401);const registerOther=await stranger.request.post('http://localhost:3000/api/register',{headers:{origin:'http://localhost:3000'},data:{fullName:'Other Artist',email:`other-${Date.now()}@example.com`,phone:'+96892123457',terms:true,marketing:true}});expect(registerOther.status()).toBe(200);const other=await stranger.request.get('http://localhost:3000/api/export');const otherData=await other.json();expect(otherData.profile.id).not.toBe(data.profile.id);expect(otherData.profile.email).not.toBe(email);await stranger.close();
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Dashboard',exact:true}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'work/screenshots/mobile-dashboard.png',fullPage:true});
+ await page.getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('button',{name:'End this browser session'}).click();await expect(page).toHaveURL('http://localhost:3000/');expect((await context.request.get('/api/export')).status()).toBe(401);
+ await context.addCookies([{name:'sirius_session',value:session!.value,domain:'localhost',path:'/'}]);expect((await context.request.get('/api/export')).status()).toBe(401);
+ const stored=JSON.parse(await readFile('.data/e2e/studio.json','utf8'));stored.sessions.push({token_hash:createHash('sha256').update('expired-test-token').digest('hex'),artist_id:data.profile.id,expires_at:'2020-01-01T00:00:00Z'});await writeFile('.data/e2e/studio.json',JSON.stringify(stored));await context.addCookies([{name:'sirius_session',value:'expired-test-token',domain:'localhost',path:'/'}]);expect((await context.request.get('/api/export')).status()).toBe(401);
+ await page.goto('/');await page.waitForLoadState('networkidle');await page.screenshot({path:'work/screenshots/mobile-registration.png',fullPage:true});
+});
