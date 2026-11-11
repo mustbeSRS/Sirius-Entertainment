@@ -2,7 +2,7 @@
 
 ## Implemented in Phase 1
 
-- [x] Next.js/TypeScript responsive shell, temporary brand tokens.
+- [x] Next.js/TypeScript responsive shell, SIRIUS reference-derived brand tokens.
 - [x] Full name/email/international phone validation.
 - [x] Terms acknowledgment, independent unchecked marketing choice.
 - [x] Hashed opaque sessions, expiration/revocation, origin checks.
@@ -28,4 +28,4 @@
 
 ## Limitations
 
-No writing is accepted yet; no fake live AI/dictionary/admin integrations. Project placeholders navigate to explanatory pages. First registration and ordinary returns currently share “Welcome back”; preferred-name editing is pending. Theme/collapse state is not yet persisted. The registration global development throttle is intentionally conservative. Session loss has no recovery yet, so use test contacts only. Legal text and visual branding are provisional. No Supabase/production database test can be claimed without configured infrastructure.
+No writing is accepted yet; no fake live AI/dictionary/admin integrations. Project placeholders navigate to explanatory pages. First registration and ordinary returns currently share “Welcome back”; preferred-name editing is pending. Theme/collapse state is not yet persisted. The registration global development throttle is intentionally conservative. Session loss has no recovery yet, so use test contacts only. Legal text remains provisional. UI colors are reference-derived rather than a claimed official color specification. No Supabase/production database test can be claimed without configured infrastructure.
