@@ -1,5 +1,5 @@
 begin;
-create extension if not exists pgcrypto;
+-- gen_random_uuid is built into PostgreSQL 13 and later.
 create table artist_profiles (
  id uuid primary key default gen_random_uuid(), full_name text not null check(length(full_name) between 2 and 120),
  email text not null check(email=lower(email)), phone text not null check(phone ~ '^\+[1-9][0-9]{7,14}$'),
