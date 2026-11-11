@@ -10,3 +10,13 @@
 - Public registration is disabled by default. Legal text, branding, recovery, deletion and launch privacy review remain pending.
 
 Screenshots are local test artifacts in ignored `work/screenshots/`, not source-controlled. Real personal data and development session stores are excluded from Git.
+
+## SIRIUS branding update
+
+Reviewed both supplied PDFs as visual references. Extracted existing logo artwork from SRSPRNT.pdf page 1 without redrawing/recoloring. Added shared brand component, violet/silver tokens, gradient accents and bold heading typography. The documents’ rental content is not incorporated as product instructions.
+
+Re-ran production build, TypeScript, 4 unit checks and browser acceptance journey successfully. Inspected updated desktop welcome/dashboard and mobile screens. Dark-mode primary button white text contrast at gradient endpoints: 5.55:1 and 8.52:1; secondary text on panels: 8.38:1. These checks do not constitute a full accessibility audit.
+
+GitHub connection subsequently confirmed with repository push permission. Initial authentication failure above is historical. See the repository branches/PR for current publishing state.
+
+Screenshots in docs/previews contain invented test identity only. Branding UI colors are derived from supplied references, not official spot-color specifications.

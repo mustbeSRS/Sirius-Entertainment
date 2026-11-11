@@ -35,6 +35,10 @@ Working locally: responsive shell; name/email/phone registration; optional unche
 
 Not implemented: writing/editor, project CRUD, toolkit, admin, verified recovery, deletion, optional profile editing, production activity analytics. No AI calls or paid services. Project and preferences tables reserve Phase 2 structure; the rest of the normalized schema is designed in docs/architecture.md and will be migrated alongside tested functionality.
 
-The logo is a temporary text label, not a recreation of the SIRIUS logo. Fonts are system fonts; all colors are replaceable CSS variables. Light mode and navigation collapse are in-session UI choices; persistence follows later.
+The logo is intact artwork extracted from the supplied SRSPRNT.pdf. Violet, silver and stage-light accents draw from both supplied PDFs. Fonts are system fonts; all colors are replaceable CSS variables. Light mode and navigation collapse are in-session UI choices; persistence follows later.
 
 See docs/ for requirements, architecture, design tokens, deployment, completion status, and launch limitations.
+
+## Branding preview
+
+The updated welcome and dashboard use the supplied SIRIUS identity. See [welcome](docs/previews/welcome.png), [dashboard](docs/previews/dashboard.png), and [mobile](docs/previews/mobile-registration.png). These are screenshots of the functional local development preview, not a deployed public service.

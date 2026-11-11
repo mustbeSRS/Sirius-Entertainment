@@ -4,6 +4,9 @@ import { mkdir,readFile,writeFile } from 'node:fs/promises';
 test('registration, returning recognition, consent, isolation, responsive UI and revocation',async({page,context,browser})=>{
  const email=`test-${Date.now()}@example.com`;
  await page.goto('/');
+ await page.waitForLoadState('networkidle');
+ await mkdir('work/screenshots',{recursive:true});
+ await page.screenshot({path:'work/screenshots/welcome.png',fullPage:true});
  await expect(page.getByRole('heading',{name:'Make room for your words.'})).toBeVisible();
  const marketing=page.locator('input[name=marketing]');await expect(marketing).not.toBeChecked();
  await page.getByLabel('Full name').fill('Test Artist');await page.getByLabel('Email address').fill(email);await page.getByLabel('Mobile number').fill('+96892123456');await page.locator('input[name=terms]').check();
