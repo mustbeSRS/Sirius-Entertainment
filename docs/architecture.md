@@ -1,47 +1,40 @@
-# Architecture and trust boundaries
+# Application architecture
 
-## Repository
+## Runtime and repository
 
-```
-src/app/             Next.js App Router pages and API routes
-src/components/      Registration and responsive studio shell
-src/lib/             Validation, session cryptography, persistence
-supabase/migrations/ Versioned PostgreSQL migrations
-tests/               Unit tests
- e2e/                Browser acceptance tests (under tests)
-docs/                Product, design, deployment, verification
-```
+Next.js App Router, React, TypeScript and Tailwind/CSS tokens; Lucide icons; Tiptap StarterKit for structured writing; dnd-kit for keyboard/pointer ordering. Heavy editor/language/music panels load on demand to keep the initial mobile dashboard lighter. Native dialog provides focus containment.
 
-Next.js server components read the session; protected server API routes handle mutations. Contacts never need to enter a public Supabase browser client. Tailwind v4 and CSS design tokens style the shell; Lucide icons are used. shadcn/ui and Tiptap are reserved for editor/project work rather than added as unused dependencies.
+- src/app: pages and authenticated server API routes.
+- src/components: studio shell, projects/calendar, editor, ideas/library, language tools, Chord Lab, recovery and admin.
+- src/lib: typed models/validation, crypto sessions, owner-scoped persistence, linguistic datasets, music theory and sampled piano, optional disabled AI interface.
+- supabase/migrations: versioned normalized schema and RLS.
+- tests: unit/PostgreSQL tests and real browser acceptance journeys.
+- public: intact SIRIUS brand asset and attributed local grand-piano samples.
 
-## Identity
+## Persistence and ownership
 
-A 256-bit random token is sent only in an HttpOnly, SameSite=Lax cookie; Secure is set in production. The server stores SHA-256(token), artist ID, expiration, and revocation. Current lifetime: 30 days, absolute, no sliding renewal. No IP identity or fingerprinting. Unverified email uniqueness blocks duplicate registration but cannot authenticate or recover an account. Registration does not create any admin role.
+Supabase PostgreSQL is the production path. Projects, writing pieces/sections, draft versions, ideas, tasks, saved words, chord progressions and preferences are normalized tables, with UUIDs and owner IDs. Child/project links enforce compound ownership constraints. Creative reads/mutations run in transactions with a server-selected studio.artist_id; PostgreSQL RLS and explicit route checks both enforce ownership. Public Supabase roles have no table access. Use the restricted sirius_app runtime role, never a table owner/superuser/BYPASSRLS credential.
 
-Exact-origin checking protects mutations. Registration rate limits are stored server-side; production SQL uses an advisory transaction lock. Vercel trusted network headers supply an abuse bucket, stored hashed and expired within one hour; this is not identity. Other deployments must add trusted edge throttling; the global fallback intentionally limits registration conservatively. JSON requests are size bounded. Errors do not expose SQL or credentials.
+A separate single-process development adapter serializes atomic file replacement under .data. It is explicitly labeled and prohibited in production. Production builds succeeding without DATABASE_URL do not imply database readiness.
 
-## Database
+Writing autosave stores text plus Tiptap structured JSON. Revision checks reject stale writes. Browser-local recovery is scoped by artist/piece; interrupted/conflicting copies remain available rather than silently overwriting the server. Before leaving or taking a snapshot, queued saves are drained so an in-flight older save cannot hide a newer change. Manual restore locks/preserves the current draft before replacement. Snapshots are not created on every keystroke.
 
-Supabase PostgreSQL via a server-only connection. Use a dedicated login inheriting `sirius_app`, never a table-owner/superuser/service-role credential. The migration enables RLS on all tables and gives no anon/authenticated table access. The Phase 1 backend role can operate on profiles/sessions/consent/abuse records; each HTTP operation resolves identity from the session and never accepts a caller-provided owner ID. Backend credentials are therefore a sensitive trust boundary. Projects/preferences have no access policy until their owner-scoped implementation in Phase 2. Future writing policies must enforce ownership at SQL level as well as in routes.
+## Identity and security
 
-Registration inserts the artist, initial consent event and session in one transaction. Session lookup checks expiry, revocation and active account. Consent changes and consent audit insertion share a transaction. Development uses an explicit serialized file adapter with atomic file replacement, restricted to one development process. It is not Supabase and cannot run in production.
+Artist cookies hold 256-bit random session credentials; server storage keeps SHA-256 hashes, owner ID, expiry and revocation. Cookies are HttpOnly/SameSite=Lax and Secure in production. Artist lifetime is 30 days. Exact-origin checks protect mutations. Registration/recovery abuse buckets use short-lived hashed trusted network metadata, not IP identity or fingerprinting.
 
-## Remaining normalized schema (future migrations)
+Unverified contacts never authenticate recovery. Fifteen-minute, one-use hashed email tokens are consumed explicitly via POST after a confirmation gesture. Artist recovery verifies email and revokes previous artist sessions. Production delivery uses separately approved SMTP with TLS; development uses an ignored private mailbox. No token is returned by the request API.
 
-- projects: owner, title, description, type, status, position, cover, tags, deadlines, timestamps.
-- writing_pieces: owner, project, kind, title, state, revision, timestamps.
-- writing_sections: piece, owner, section name, structured editor JSON, position, revision.
-- draft_versions: owner, piece, snapshot JSON, name, timestamp; preserve current before restore.
-- ideas: owner, type, body, tags, collection, project, favorite, archive timestamps.
-- tasks: owner, project/piece/section associations, title, checklist, priority, due date, status, position.
-- saved_words: owner, term, source, meaning, pronunciation, notes.
-- user_preferences: owner, theme, language, editor preferences.
-- admin_users: separately verified auth identity and explicit assigned roles.
-- admin_audit: actor, action, contact scope, timestamp, export reason; no private drafts.
-- recovery_tokens: hashed one-time, expiring, purpose-bound tokens; verified delivery; revoke prior credentials as appropriate.
+Administration uses separately provisioned admin_users, separate-purpose recovery tokens and a distinct eight-hour cookie. Artist registration cannot provision admins. Admin contact endpoints expose no writing and audit sensitive access/export. Outreach CSV requires current consent and verified email, escapes spreadsheet formulas, and excludes drafts. Profile deletion cascades creative data and removes outstanding artist recovery credentials. Marketing history is independent of tool access.
 
-Use compound ownership constraints for child relationships, index owner queries, and never expose other owners through guessed UUIDs.
+## Language and music
 
-## Providers and costs
+CMU pronunciations drive rhymes, syllables and matching initial phonemes. Unknown syllables/near matches are labeled approximate. The WordNet adapter reads the bundled index/data offsets without third-party prototype polyfills, and returns dictionary senses/examples/antonym links. Guided inspiration exercises are explicitly deterministic prompts.
 
-Supabase database and Vercel-compatible hosting are required for production; GitHub stores source. Verified recovery needs an approved transactional email provider. Free-tier eligibility and limits must be checked at setup; no billing is enabled here. Core language tools will use approved dictionary/pronunciation sources with license and availability checks. AI provider interface will remain disabled without explicit approval and server-side limits.
+Chord Lab uses conventional diatonic harmony, circle-of-fifths ordering, shared-tone/tonal-function suggestions and curated common progression patterns. Native Web Audio decodes locally served Yamaha C5/Salamander samples after a user gesture; it transposes sample roots, voices chords with a bass note, applies gain/release/sustain, and cancels sequences on stop/unmount. Audio samples and dataset licenses are attributed.
+
+AI is disabled. The typed optional provider boundary defines explicitly consented context and suggestions; live providers, quotas/cost logging and activation require separate approval/implementation before use.
+
+## Operations still requiring external setup
+
+Approved Supabase/SMTP/Vercel configuration, runtime-role integration verification, production smoke tests, policy/controller/retention/region and Oman/younger-user review, manual real-device audio/accessibility checks, backups/monitoring. The admin list currently targets an initial small community; add server pagination before large-scale use.
