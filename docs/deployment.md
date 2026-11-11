@@ -1,14 +1,53 @@
-# Deployment — Vercel + Supabase
+# Production setup — Supabase + Vercel-compatible hosting
 
-No deployment, paid service, or billing setup has been performed.
+No hosting, SMTP service, paid AI or billing has been provisioned by this implementation.
 
-1. Create/select the approved Supabase project and confirm region, privacy/transfer requirements, free-tier constraints, and backups. Do not put credentials in chat or source.
-2. Review/apply `supabase/migrations/0001_foundation.sql` using the database owner. Supabase provides anon/authenticated roles used by the migration. The migration creates a NOLOGIN `sirius_app` role; provision a separate LOGIN role with a generated private password and grant `sirius_app` to it. Do not grant table ownership/BYPASSRLS. Configure its verified TLS connection/pooler URL as DATABASE_URL. This custom-role/pooler path needs real integration testing in the selected project.
-3. Import this repository into Vercel. Build: npm run build. Framework: Next.js. Configure DATABASE_URL and APP_ORIGIN as server-only environment variables. APP_ORIGIN is the exact deployment URL origin. Never prefix credentials with NEXT_PUBLIC_. Set LOCAL_DEMO=false. Keep PUBLIC_REGISTRATION_ENABLED=false while reviewing.
-4. Deploy a restricted preview and run database/session tests against two separate artist profiles. Confirm anon and authenticated Supabase REST clients cannot read contacts/sessions. Test expiry/revocation and owner isolation. Confirm production cookies include Secure/HttpOnly/SameSite.
-5. Add verified passwordless recovery, self-service deletion, admin isolation/audit, contact retention policies, final controller/contact details, younger-user and Oman legal review before enabling public registration.
-6. Enable PUBLIC_REGISTRATION_ENABLED only after those launch checks. Production fails closed if the database is absent. A production build can succeed without connecting; it does not prove database readiness.
+## Database
 
-Preview URLs: set APP_ORIGIN per deployment. This cannot be wildcarded. The development adapter is unavailable in `next start`, even with LOCAL_DEMO=true. Do not deploy filesystem storage on Vercel.
+1. Create/select the founder-approved Supabase project. Confirm region, data transfers, backup retention, free-tier limits and the privacy/legal requirements.
+2. Apply migrations in numeric order: 0001_foundation.sql, then 0002_creative_workspace.sql. Migration 1 is the foundation; migration 2 adds normalized creative records, owner RLS, recovery and admin isolation. These files are for a new installation; do not repeatedly apply a migration or edit one already deployed without a subsequent migration.
+3. As database owner, provision a private LOGIN role that inherits `sirius_app` and can connect to the database. It must NOT own tables, have superuser, or BYPASSRLS. Give it a unique private generated password through secure environment settings. Never place it in source or chat.
+4. Set DATABASE_URL to the TLS-verified direct/pooler connection for this restricted role. postgres.js uses prepare:false for pooler compatibility. Validate the selected Supabase pooler’s custom-role connection format; test transactions and RLS with two artist identities before relying on the connection.
+5. No anon/authenticated REST client can access the tables. Creative queries use transaction-local studio.artist_id and owner policies. The backend identity/contact role is a trusted boundary and is not exposed to browsers.
 
-GitHub: work is prepared on a feature branch. Merge after reviewing the Phase 1 scope. Configure hosting only when ready to review a concrete deployment.
+## Hosting and environment
+
+Import the repository into Vercel or an equivalent Node/Next.js host. Build `npm run build`; framework Next.js; Node 22+.
+
+Required server-only variables:
+
+- DATABASE_URL: restricted production database connection.
+- APP_ORIGIN: exact externally visited origin. No wildcard, no path. Preview deployments need their own correct value.
+- LOCAL_DEMO=false (also prohibited by production code).
+- PUBLIC_REGISTRATION_ENABLED=false while setup/legal checks are pending.
+
+Do not use NEXT_PUBLIC_ for secrets. WordNet data is included through outputFileTracingIncludes. Local piano samples are served from public/audio/piano. Verify deployment upload/function size limits against the bundled dataset rather than assuming any hosting free tier is unlimited.
+
+## Verified recovery email
+
+Configure a founder-approved SMTP sender with authenticated domain delivery:
+
+- SMTP_HOST, SMTP_PORT (587 by default; 465 for implicit TLS).
+- SMTP_USER and SMTP_PASSWORD if authentication is required.
+- MAIL_FROM: approved verified sender address.
+
+Ports other than 465 require STARTTLS. No SMTP provider is chosen or billed automatically. Test delivery, link origin, 15-minute expiry, one-time consumption and prior-session revocation. Missing configuration produces an explicit unavailable response. Development instead writes to ignored .data/mailbox.json; this adapter is never enabled in production.
+
+## Administrator provisioning
+
+Use a trusted database-owner connection to insert an approved email into admin_users with role contacts or owner. Administrators are provisioned separately, never through artist registration. Open `/admin`, request a link, and verify the email. Admin cookies are separate, expire after eight hours, and cannot authenticate as an artist. Local ADMIN_EMAILS is a development-only allowlist.
+
+Contact view/export actions are audited. CSV export always filters current marketing consent and prevents spreadsheet formula execution. It contains no private writing. Assigning the contacts role authorizes contact administration only; there is no private-draft admin endpoint.
+
+## Before public launch
+
+- Real Supabase role/pooler/transaction/RLS integration tests, production Secure cookies and CSRF origin verification.
+- Real SMTP delivery and recovery/replay tests; test account deletion and export against the deployed database.
+- Controller identity/privacy contact, final privacy/terms, retention/backup expiry, provider regions/transfers, younger-user eligibility/consent, and applicable Oman review.
+- Manual keyboard/screen-reader testing and real-device audio listening. Automated accessibility checks and audio decode tests have limits.
+- Trusted edge rate limiting if hosting outside Vercel (the non-Vercel fallback is conservative/global). Configure monitoring, backup restore procedures, database size controls and contact-directory pagination for larger deployments.
+- Only then set PUBLIC_REGISTRATION_ENABLED=true. A successful build alone does not establish production readiness.
+
+## Preview for the founder
+
+Use the cloud environment’s port-3000 browser preview. This does not require a local Mac development environment. There is no public Vercel URL until an approved hosting project and environment variables are configured.
